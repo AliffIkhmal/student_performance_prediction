@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+*.pkl
+*.joblib
+trained_model.pkl
+.pytest_cache/
+.vscode/

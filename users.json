@@ -1,0 +1,22 @@
+{
+    "admin": {
+        "password": "843094247d61219be76c93c5f644dcbe01178cc78ad76bae3e3d5ebdb6ebc233",
+        "role": "admin",
+        "salt": "617825542137054a39618673787ec3e8"
+    },
+    "Azri": {
+        "password": "d6b3af66c15366e34662b6f8f7a0f7c5dde9df870c58ab56be6015456afaa697",
+        "role": "lecturer",
+        "salt": "31ec327000b4a1edbb30574a19882708"
+    },
+    "Jerry": {
+        "password": "1295b7fc3701d1097653b367e04cd826c8442916e4f465b45f3c8490b1a9902b",
+        "role": "lecturer",
+        "salt": "ebb67887154278438bea2b27dfda75e9"
+    },
+    "aliff": {
+        "password": "ebdcaabcdcfe3a7ea05a154971d998222a842c925151bc5a321756fcdaa6900c",
+        "salt": "1582e83185028343a3f9f1214a6945e9",
+        "role": "lecturer"
+    }
+}

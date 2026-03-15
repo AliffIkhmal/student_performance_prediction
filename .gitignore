@@ -8,3 +8,6 @@ venv/
 trained_model.pkl
 .pytest_cache/
 .vscode/
+
+# Streamlit local secrets (add real secrets via Streamlit Cloud UI instead)
+.streamlit/secrets.toml

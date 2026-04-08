@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+    <article class="bento-card xl:col-span-4">
+        <div class="flex flex-col items-center text-center">
+            <div class="flex h-28 w-28 items-center justify-center rounded-full bg-primary text-3xl font-headline font-black text-white shadow-panel">
+                {{ student.display_name|slice:"8:10" }}
+            </div>
+            <h2 class="mt-5 font-headline text-3xl font-extrabold text-primary">{{ student.display_name }}</h2>
+            <p class="mt-2 text-sm text-on-surface-variant">Student ID: {{ student.student_id }}</p>
+        </div>
+
+        <div class="mt-8 space-y-4 border-t border-outline-variant/40 pt-6 text-sm text-on-surface-variant">
+            <div class="flex items-center justify-between">
+                <span>Age</span>
+                <span class="font-semibold text-primary">{{ student.age }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span>Gender</span>
+                <span class="font-semibold text-primary">{{ student.gender }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span>Parental Education</span>
+                <span class="font-semibold text-primary">{{ student.parental_education }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span>Actual Grade</span>
+                <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-bold text-primary">{{ student.actual_grade }}</span>
+            </div>
+            <div class="pt-2">
+                <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">Active Activities</p>
+                <div class="flex flex-wrap gap-2">
+                    {% for activity in student.activities %}
+                        <span class="rounded-full bg-secondary-container/40 px-3 py-1 text-xs font-semibold text-secondary">{{ activity }}</span>
+                    {% empty %}
+                        <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">No recorded activities</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article class="bento-card bg-primary-container text-white xl:col-span-4">
+        <div class="flex items-center justify-between gap-4">
+            <div>
+                <p class="text-[11px] uppercase tracking-[0.2em] text-white/60">Prediction Summary</p>
+                <h2 class="mt-2 font-headline text-2xl font-extrabold">Current Outlook</h2>
+            </div>
+            <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold">Django View</span>
+        </div>
+
+        <div class="mt-8 flex items-center gap-5">
+            <div class="flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/5">
+                <span class="text-[10px] uppercase tracking-[0.2em] text-white/60">Predicted</span>
+                <span class="font-headline text-4xl font-black">{{ student.prediction.predicted_grade }}</span>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm text-white/70">Confidence</p>
+                <div class="mt-2 h-2 rounded-full bg-white/10">
+                    <div class="h-2 rounded-full bg-sky-300" style="width: {{ student.prediction.confidence }}%;"></div>
+                </div>
+                <p class="mt-2 text-sm font-bold text-white">{{ student.prediction.confidence }}%</p>
+                <div class="mt-4 inline-flex rounded-full px-3 py-1 text-xs font-bold {{ student.prediction.risk_style }}">
+                    {{ student.prediction.risk_label }} · {{ student.prediction.risk_score }}/100
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 rounded-3xl border border-white/10 bg-white/5 px-5 py-5">
+            <p class="text-sm text-white/75">Current GPA</p>
+            <p class="mt-2 font-headline text-4xl font-extrabold">{{ student.gpa }}</p>
+        </div>
+    </article>
+
+    <article class="bento-card xl:col-span-4">
+        <h2 class="font-headline text-xl font-bold text-primary">SHAP Feature Drivers</h2>
+        <p class="mt-2 text-sm text-on-surface-variant">These factors are ranked from the current local SHAP explanation of the student's predicted grade.</p>
+        <div class="mt-5 space-y-3">
+            {% for factor in student.prediction.factors %}
+                <div class="rounded-2xl border px-4 py-4 {% if factor.tone == 'negative' %}tone-danger{% elif factor.tone == 'positive' %}tone-success{% else %}border-outline-variant/40 bg-surface-container-low{% endif %}">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="font-semibold text-primary">{{ factor.title }}</p>
+                            <p class="mt-1 text-sm text-on-surface-variant">{{ factor.description }}</p>
+                        </div>
+                        <span class="rounded-full px-3 py-1 text-xs font-bold {% if factor.impact > 0 %}tone-success-subtle{% elif factor.impact < 0 %}tone-danger-subtle{% else %}bg-surface-container text-on-surface-variant{% endif %}">
+                            {% if factor.impact > 0 %}+{% endif %}{{ factor.impact }}%
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="bento-card xl:col-span-8">
+        <div class="mb-6">
+            <h2 class="font-headline text-xl font-bold text-primary">Current Academic Signals</h2>
+            <p class="text-sm text-on-surface-variant">This replaces the fake historical trend blocks from the raw Stitch export with values that actually exist in your dataset.</p>
+        </div>
+
+        <div class="grid gap-5 md:grid-cols-2">
+            {% for metric in student.metrics %}
+                <div class="rounded-3xl bg-surface-container-low px-5 py-5">
+                    <div class="mb-3 flex items-center justify-between gap-4">
+                        <p class="font-semibold text-primary">{{ metric.label }}</p>
+                        <span class="text-sm font-semibold {% if metric.tone == 'negative' %}text-red-700{% else %}text-secondary{% endif %}">{{ metric.value }}</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-white">
+                        <div class="h-2 rounded-full {% if metric.tone == 'negative' %}bg-red-500{% else %}bg-gradient-to-r from-secondary to-primary{% endif %}" style="width: {{ metric.progress }}%;"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="bento-card xl:col-span-4">
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-headline text-xl font-bold text-primary">Recommended Actions</h2>
+            <a href="{% url 'portal:predict' %}" class="rounded-full bg-surface-container px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container-high">New prediction</a>
+        </div>
+
+        <div class="mt-5 space-y-3">
+            {% for action in student.prediction.recommendations %}
+                <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                            <span class="material-symbols-outlined">{{ action.icon }}</span>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="font-semibold text-primary">{{ action.title }}</p>
+                                <span class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] {{ action.severity_style }}">{{ action.severity_label }}</span>
+                                <span class="rounded-full bg-surface-bright px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">{{ action.category_label }}</span>
+                            </div>
+                            <p class="mt-1 text-sm text-on-surface-variant">{{ action.description }}</p>
+                            {% if action.target_feature_label %}
+                                <p class="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Target: {{ action.target_feature_label }}{% if action.impact_share %} · SHAP priority {{ action.impact_share }}%{% endif %}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form method="post" class="mt-4 space-y-3 border-t border-outline-variant/40 pt-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="track_intervention">
+                        {% for hidden_field in action.track_form.hidden_fields %}
+                            {{ hidden_field }}
+                        {% endfor %}
+                        <label class="block space-y-2 text-sm font-medium text-on-surface-variant">
+                            <span>Planning Note</span>
+                            {{ action.track_form.note }}
+                        </label>
+                        <label class="block space-y-2 text-sm font-medium text-on-surface-variant">
+                            <span>Review Date</span>
+                            {{ action.track_form.review_date }}
+                        </label>
+                        <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white transition hover:opacity-95">
+                            <span class="material-symbols-outlined text-base">playlist_add_check</span>
+                            Track This Action
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="bento-card xl:col-span-12">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h2 class="font-headline text-xl font-bold text-primary">Intervention Tracker</h2>
+                <p class="text-sm text-on-surface-variant">Log which actions were taken for this student and update whether they improved the situation over time.</p>
+            </div>
+            <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">{{ tracked_interventions|length }} records</span>
+        </div>
+
+        <div class="mt-6 space-y-4">
+            {% for record in tracked_interventions %}
+                <div class="rounded-3xl border border-outline-variant/40 bg-surface-container-low px-5 py-5">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="font-semibold text-primary">{{ record.title }}</p>
+                                <span class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] {{ record.severity_style }}">{{ record.get_severity_display }}</span>
+                                <span class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] {{ record.status_style }}">{{ record.get_status_display }}</span>
+                                <span class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] {{ record.outcome_style }}">{{ record.get_outcome_display }}</span>
+                            </div>
+                            <p class="mt-2 text-sm text-on-surface-variant">Created {{ record.created_at|date:"M j, Y H:i" }} · Target: {{ record.target_feature_label }}{% if record.impact_share %} · SHAP priority {{ record.impact_share }}%{% endif %}</p>
+                            <p class="mt-1 text-sm text-on-surface-variant">Risk snapshot: {{ record.predicted_risk_label }} · {{ record.predicted_risk_score }}/100 · Grade {{ record.predicted_grade }}</p>
+                            {% if record.note %}
+                                <p class="mt-3 rounded-2xl bg-surface-bright px-4 py-3 text-sm text-on-surface-variant"><span class="font-semibold text-primary">Plan:</span> {{ record.note }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form method="post" class="mt-5 grid gap-4 lg:grid-cols-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_intervention">
+                        <input type="hidden" name="record_id" value="{{ record.pk }}">
+                        <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                            <span>Delivery Status</span>
+                            {{ record.outcome_form.status }}
+                        </label>
+                        <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                            <span>Outcome</span>
+                            {{ record.outcome_form.outcome }}
+                        </label>
+                        <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                            <span>Next Review</span>
+                            {{ record.outcome_form.review_date }}
+                        </label>
+                        <div class="flex items-end">
+                            <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white transition hover:opacity-95">
+                                <span class="material-symbols-outlined text-base">task_alt</span>
+                                Save Outcome
+                            </button>
+                        </div>
+                        <label class="space-y-2 text-sm font-medium text-on-surface-variant lg:col-span-2">
+                            <span>Outcome Notes</span>
+                            {{ record.outcome_form.outcome_note }}
+                        </label>
+                    </form>
+                </div>
+            {% empty %}
+                <div class="rounded-2xl border border-outline-variant/40 bg-surface-container-low px-5 py-5 text-sm text-on-surface-variant">
+                    Track one of the suggested actions above to start logging intervention outcomes for this student.
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

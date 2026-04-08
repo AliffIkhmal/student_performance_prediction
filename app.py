@@ -1,9 +1,22 @@
+import os
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "student_portal.settings")
+
+import django
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+
+django.setup()
+
+from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+
 from model import StudentPerformanceModel
-from auth import UserManager
+from portal.auth_utils import bootstrap_default_admin, get_user_role, set_user_role
+from portal.models import UserProfile
 
 
 # ── Page Config ──────────────────────────────────────────────────────────────
@@ -12,6 +25,8 @@ st.set_page_config(
     page_icon="📚",
     layout="wide",
 )
+
+bootstrap_default_admin()
 
 st.markdown("""
     <style>
@@ -54,6 +69,59 @@ def train_model(_X, _y):
     model = StudentPerformanceModel()
     metrics = model.train(_X, _y)
     return model, metrics
+
+
+def authenticate_streamlit_user(username, password):
+    return authenticate(username=username, password=password)
+
+
+def create_portal_user(username, password, role):
+    user_model = get_user_model()
+    username = username.strip()
+
+    if user_model.objects.filter(username=username).exists():
+        return False, "Username already exists"
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+
+    try:
+        validate_password(password)
+    except ValidationError as exc:
+        return False, exc.messages[0]
+
+    user = user_model.objects.create_user(
+        username=username,
+        password=password,
+        is_staff=role == UserProfile.ROLE_ADMIN,
+    )
+    set_user_role(user, role)
+    return True, "User added successfully"
+
+
+def remove_portal_user(username, current_username=None):
+    user_model = get_user_model()
+    target = user_model.objects.filter(username=username).first()
+
+    if target is None:
+        return False, "Could not remove user"
+    if current_username and target.username == current_username:
+        return False, "You cannot remove the account you are currently using"
+    if (
+        get_user_role(target) == UserProfile.ROLE_ADMIN
+        and user_model.objects.filter(profile__role=UserProfile.ROLE_ADMIN).count() <= 1
+    ):
+        return False, "At least one admin account must remain in the system"
+
+    target.delete()
+    return True, "User removed successfully"
+
+
+def list_portal_users():
+    user_model = get_user_model()
+    return [
+        {"Username": user.username, "Role": get_user_role(user)}
+        for user in user_model.objects.select_related("profile").order_by("username")
+    ]
 
 
 # ── Filters ──────────────────────────────────────────────────────────────────
@@ -259,7 +327,6 @@ def prediction_section(model):
 def login_page():
     """Display the login form."""
     st.title("🔐 Login")
-    user_manager = UserManager()
 
     with st.form("login_form"):
         username = st.text_input("Username")
@@ -267,10 +334,11 @@ def login_page():
         submitted = st.form_submit_button("Login")
 
         if submitted:
-            role = user_manager.verify_user(username, password)
-            if role:
+            user = authenticate_streamlit_user(username, password)
+            if user:
+                role = get_user_role(user)
                 st.session_state["role"] = role
-                st.session_state["username"] = username
+                st.session_state["username"] = user.username
                 st.success(f"Logged in as {role}")
                 st.rerun()
             else:
@@ -280,7 +348,6 @@ def login_page():
 def admin_page():
     """Admin dashboard for managing users."""
     st.title("👨‍💼 Admin Dashboard")
-    user_manager = UserManager()
 
     # Add user
     st.subheader("Add New User")
@@ -291,7 +358,7 @@ def admin_page():
 
         if st.form_submit_button("Add User"):
             if new_username and new_password:
-                success, message = user_manager.add_user(new_username, new_password, role)
+                success, message = create_portal_user(new_username, new_password, role)
                 if success:
                     st.success(f"Added user: {new_username}")
                 else:
@@ -301,25 +368,31 @@ def admin_page():
 
     # Remove user
     st.subheader("Remove User")
-    other_users = [u for u in user_manager.users if u != "admin"]
+    current_username = st.session_state.get("username")
+    other_users = [
+        user["Username"]
+        for user in list_portal_users()
+        if user["Username"] != current_username
+    ]
 
     if other_users:
         user_to_remove = st.selectbox("Select user to remove", other_users)
         if st.button("Remove User"):
-            if user_manager.remove_user(user_to_remove):
+            success, message = remove_portal_user(
+                user_to_remove,
+                current_username=current_username,
+            )
+            if success:
                 st.success(f"Removed user: {user_to_remove}")
                 st.rerun()
             else:
-                st.error("Could not remove user")
+                st.error(message)
     else:
         st.info("No users to remove")
 
     # User list
     st.subheader("All Users")
-    user_df = pd.DataFrame([
-        {"Username": name, "Role": data["role"]}
-        for name, data in user_manager.users.items()
-    ])
+    user_df = pd.DataFrame(list_portal_users())
     st.dataframe(user_df)
 
 

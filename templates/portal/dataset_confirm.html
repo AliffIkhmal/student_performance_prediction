@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <article class="bento-card xl:col-span-8">
+            {% if mapping_form.non_field_errors %}
+                <div class="api-status api-status-error">{{ mapping_form.non_field_errors|join:" " }}</div>
+            {% endif %}
+
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="font-headline text-2xl font-bold text-primary">Review Column Mapping</h2>
+                    <p class="mt-1 text-sm text-on-surface-variant">Confirm each required field before this dataset becomes active for your account.</p>
+                </div>
+                <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">{{ lecturer_dataset.original_filename }}</span>
+            </div>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                {% for row in mapping_rows %}
+                    <div class="rounded-2xl border border-outline-variant/40 bg-surface-container-low px-4 py-4">
+                        <div class="grid gap-4 lg:grid-cols-[1fr,1.1fr] lg:items-start">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-semibold text-primary">{{ row.label }}</p>
+                                    {% if row.required %}
+                                        <span class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] tone-danger-subtle">Required</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-surface-container px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">Optional</span>
+                                    {% endif %}
+                                </div>
+                                <p class="mt-2 text-sm text-on-surface-variant">Suggested match: {% if row.selected_actual %}<span class="font-semibold text-primary">{{ row.selected_actual }}</span>{% else %}Not detected automatically{% endif %}</p>
+                            </div>
+                            <div>
+                                {{ row.bound_field }}
+                                {% if row.bound_field.errors %}
+                                    <p class="field-error">{{ row.bound_field.errors|join:" " }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <div class="flex flex-wrap gap-3 pt-2">
+                    <a href="{% url 'portal:dataset_upload' %}" class="rounded-2xl bg-surface-container px-5 py-3 text-sm font-semibold text-primary transition hover:bg-surface-container-high">Upload a Different File</a>
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                        <span class="material-symbols-outlined text-base">check_circle</span>
+                        Activate Dataset
+                    </button>
+                </div>
+            </form>
+        </article>
+
+        <div class="space-y-6 xl:col-span-4">
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Upload Summary</h2>
+                <div class="mt-5 grid gap-3">
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">File</p>
+                        <p class="mt-2 font-headline text-lg font-bold text-primary">{{ lecturer_dataset.original_filename }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">Rows Detected</p>
+                        <p class="mt-2 font-headline text-lg font-bold text-primary">{{ lecturer_dataset.row_count }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">CSV Columns</p>
+                        <p class="mt-2 text-sm text-on-surface-variant">{{ csv_columns|length }} columns available for mapping.</p>
+                    </div>
+                </div>
+            </article>
+
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Unassigned Columns</h2>
+                <div class="mt-5 flex flex-wrap gap-2">
+                    {% for column_name in unmatched_columns %}
+                        <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">{{ column_name }}</span>
+                    {% empty %}
+                        <p class="text-sm text-on-surface-variant">All uploaded columns are currently assigned.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Activation Notes</h2>
+                <div class="mt-5 space-y-3 text-sm text-on-surface-variant">
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        Required columns must be mapped and contain numeric values where expected.
+                    </div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        Optional period fields like AcademicSession, Semester, or RecordDate unlock dashboard period filters automatically.
+                    </div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        Activating this dataset will replace any previously active lecturer dataset on your account.
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <article class="bento-card xl:col-span-8">
+            <form id="batch-upload-form" method="post" enctype="multipart/form-data" class="upload-zone" data-api-url="{% url 'portal:batch_upload_api' %}">
+                {% csrf_token %}
+                <div id="batch-status" class="api-status {% if batch_upload_form.dataset.errors %}api-status-error{% else %}hidden{% endif %}">
+                    {% if batch_upload_form.dataset.errors %}{{ batch_upload_form.dataset.errors|join:" " }}{% endif %}
+                </div>
+                <div class="mx-auto max-w-xl text-center">
+                    <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] bg-primary-container text-white shadow-panel">
+                        <span class="material-symbols-outlined text-4xl">cloud_upload</span>
+                    </div>
+                    <h2 class="mt-6 font-headline text-3xl font-extrabold text-primary">Upload Student Dataset</h2>
+                    <p class="mt-3 text-sm leading-7 text-on-surface-variant">Upload any CSV that contains the model fields. The system auto-detects common column aliases and also reuses your saved personal dataset mapping when available.</p>
+                    <label class="mt-8 block cursor-pointer rounded-[2rem] border-2 border-dashed border-outline-variant/70 bg-surface-container-low px-6 py-10 transition hover:border-primary/40 hover:bg-surface-container">
+                        {{ batch_upload_form.dataset }}
+                        <span class="material-symbols-outlined text-4xl text-secondary">add_circle</span>
+                        <span id="batch-file-label" class="mt-3 block font-semibold text-primary">Choose a CSV file</span>
+                        <span class="mt-2 block text-sm text-on-surface-variant">Maximum size depends on your Django deployment settings.</span>
+                    </label>
+                    <p class="field-error{% if not batch_upload_form.dataset.errors %} hidden{% endif %}" data-field-error="dataset">{{ batch_upload_form.dataset.errors|join:" " }}</p>
+                    <button type="submit" class="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                        <span class="material-symbols-outlined text-base">publish</span>
+                        Run Batch Prediction
+                    </button>
+                </div>
+            </form>
+        </article>
+
+        <article class="bento-card xl:col-span-4">
+            <h2 class="font-headline text-xl font-bold text-primary">Column Detection</h2>
+            <div class="mt-5 space-y-4">
+                <div class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">
+                    Accepted fields: Age, Gender, ParentalEducation, StudyTimeWeekly, Absences, ParentalSupport, Extracurricular, Sports, Music, and Volunteering.
+                </div>
+                <div class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">
+                    Common aliases like student_age, study_hours, cgpa, or parent_support are detected automatically.
+                </div>
+                {% if active_dataset %}
+                    <div class="rounded-2xl px-4 py-4 text-sm tone-success">
+                        Saved mapping is available from {{ active_dataset.original_filename }} and will be reused for matching headers.
+                    </div>
+                {% else %}
+                    <div class="rounded-2xl border border-outline-variant/40 bg-surface-bright px-4 py-4 text-sm text-on-surface-variant">
+                        For custom headers not covered by aliases, set up your mapping first in <a href="{% url 'portal:dataset_upload' %}" class="font-semibold text-primary hover:underline">My Dataset</a>.
+                    </div>
+                {% endif %}
+            </div>
+        </article>
+    </div>
+
+    <div id="batch-results" class="grid grid-cols-1 gap-6 xl:grid-cols-12{% if not batch_result or batch_result.error %} hidden{% endif %}">
+            <article class="bento-card xl:col-span-3">
+                <p class="text-sm font-medium text-on-surface-variant">Rows Processed</p>
+                <p id="batch-processed-count" class="mt-3 font-headline text-4xl font-extrabold text-primary">{% if batch_result %}{{ batch_result.processed_count }}{% endif %}</p>
+                <p id="batch-file-name" class="mt-3 text-sm text-on-surface-variant">{% if batch_result %}File: {{ batch_result.file_name }}{% endif %}</p>
+            </article>
+            <article class="bento-card xl:col-span-3">
+                <p class="text-sm font-medium text-on-surface-variant">High Risk</p>
+                <p id="batch-high-risk-count" class="mt-3 font-headline text-4xl font-extrabold" style="color:rgb(var(--color-error))">{% if batch_result %}{{ batch_result.high_risk_count }}{% endif %}</p>
+                <p class="mt-3 text-sm text-on-surface-variant">Students that should be reviewed first.</p>
+            </article>
+            <article class="bento-card xl:col-span-3">
+                <p class="text-sm font-medium text-on-surface-variant">Moderate Risk</p>
+                <p id="batch-moderate-risk-count" class="mt-3 font-headline text-4xl font-extrabold tone-warning-subtle" style="background:transparent;">{% if batch_result %}{{ batch_result.moderate_risk_count }}{% endif %}</p>
+                <p class="mt-3 text-sm text-on-surface-variant">Students that may need follow-up support.</p>
+            </article>
+            <article class="bento-card xl:col-span-3">
+                <p class="text-sm font-medium text-on-surface-variant">Low Risk</p>
+                <p id="batch-low-risk-count" class="mt-3 font-headline text-4xl font-extrabold tone-success-subtle" style="background:transparent;">{% if batch_result %}{{ batch_result.low_risk_count }}{% endif %}</p>
+                <p class="mt-3 text-sm text-on-surface-variant">Stable profiles in the current upload.</p>
+            </article>
+
+            <article class="bento-card xl:col-span-4">
+                <h2 class="font-headline text-xl font-bold text-primary">Predicted Grade Mix</h2>
+                <div id="batch-grade-distribution" class="mt-5 space-y-3">
+                    {% for grade in batch_result.grade_distribution %}
+                        <div class="flex items-center justify-between rounded-2xl bg-surface-container-low px-4 py-4">
+                            <span class="font-semibold text-primary">{{ grade.label }}</span>
+                            <span class="text-sm font-semibold text-on-surface-variant">{{ grade.count }} students</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="bento-card xl:col-span-8">
+                <div class="mb-6 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-primary">Prediction Preview</h2>
+                        <p class="text-sm text-on-surface-variant">Showing the first 20 records so the page stays presentation-friendly.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-2xl">
+                    <table class="min-w-full border-collapse text-left">
+                        <thead>
+                            <tr class="border-b border-outline-variant/50 text-[11px] uppercase tracking-[0.22em] text-on-surface-variant">
+                                <th class="pb-4 pr-4 font-bold">Student</th>
+                                <th class="pb-4 pr-4 font-bold">Predicted Grade</th>
+                                <th class="pb-4 pr-4 font-bold">Risk</th>
+                                <th class="pb-4 font-bold text-right">Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batch-results-body" class="divide-y divide-outline-variant/40">
+                            {% for row in batch_result.results %}
+                                <tr class="text-sm text-on-surface-variant transition hover:bg-surface-container-low">
+                                    <td class="py-4 pr-4 font-semibold text-primary">{{ row.display_name }}</td>
+                                    <td class="py-4 pr-4 font-semibold text-primary">{{ row.predicted_grade }}</td>
+                                    <td class="py-4 pr-4">
+                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold {{ row.risk_style }}">{{ row.risk_label }} · {{ row.risk_score }}</span>
+                                    </td>
+                                    <td class="py-4 text-right font-semibold text-primary">{{ row.confidence }}%</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (() => {
+        const form = document.getElementById("batch-upload-form")
+        if (!form) {
+            return
+        }
+
+        const statusEl = document.getElementById("batch-status")
+        const fileInput = form.querySelector("input[name='dataset']")
+        const fileLabel = document.getElementById("batch-file-label")
+        const resultsEl = document.getElementById("batch-results")
+        const submitButton = form.querySelector("button[type='submit']")
+
+        const toneClasses = {
+            info: "api-status api-status-info",
+            success: "api-status api-status-success",
+            error: "api-status api-status-error",
+        }
+
+        function setStatus(message, tone) {
+            if (!message) {
+                statusEl.textContent = ""
+                statusEl.className = "api-status hidden"
+                return
+            }
+            statusEl.textContent = message
+            statusEl.className = toneClasses[tone] || toneClasses.info
+        }
+
+        function setFieldError(messages) {
+            const errorEl = form.querySelector('[data-field-error="dataset"]')
+            if (errorEl) {
+                errorEl.textContent = messages.join(" ")
+                errorEl.classList.remove("hidden")
+            }
+            if (fileInput) {
+                fileInput.classList.add("form-field-invalid")
+            }
+        }
+
+        function clearFieldError() {
+            const errorEl = form.querySelector('[data-field-error="dataset"]')
+            if (errorEl) {
+                errorEl.textContent = ""
+                errorEl.classList.add("hidden")
+            }
+            if (fileInput) {
+                fileInput.classList.remove("form-field-invalid")
+            }
+        }
+
+        function renderBatchResult(result) {
+            document.getElementById("batch-processed-count").textContent = result.processed_count
+            document.getElementById("batch-file-name").textContent = `File: ${result.file_name}`
+            document.getElementById("batch-high-risk-count").textContent = result.high_risk_count
+            document.getElementById("batch-moderate-risk-count").textContent = result.moderate_risk_count
+            document.getElementById("batch-low-risk-count").textContent = result.low_risk_count
+
+            document.getElementById("batch-grade-distribution").innerHTML = result.grade_distribution.map((grade) => `
+                <div class="flex items-center justify-between rounded-2xl bg-surface-container-low px-4 py-4">
+                    <span class="font-semibold text-primary">${grade.label}</span>
+                    <span class="text-sm font-semibold text-on-surface-variant">${grade.count} students</span>
+                </div>
+            `).join("")
+
+            document.getElementById("batch-results-body").innerHTML = result.results.map((row) => `
+                <tr class="text-sm text-on-surface-variant transition hover:bg-surface-container-low">
+                    <td class="py-4 pr-4 font-semibold text-primary">${row.display_name}</td>
+                    <td class="py-4 pr-4 font-semibold text-primary">${row.predicted_grade}</td>
+                    <td class="py-4 pr-4">
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold ${row.risk_style}">${row.risk_label} · ${row.risk_score}</span>
+                    </td>
+                    <td class="py-4 text-right font-semibold text-primary">${row.confidence}%</td>
+                </tr>
+            `).join("")
+
+            resultsEl.classList.remove("hidden")
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener("change", () => {
+                const selectedFile = fileInput.files && fileInput.files[0]
+                fileLabel.textContent = selectedFile ? selectedFile.name : "Choose a CSV file"
+                clearFieldError()
+            })
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault()
+            clearFieldError()
+            setStatus("Uploading and validating dataset...", "info")
+            submitButton.disabled = true
+            submitButton.classList.add("opacity-60", "cursor-not-allowed")
+
+            try {
+                const response = await fetch(form.dataset.apiUrl, {
+                    method: "POST",
+                    body: new FormData(form),
+                })
+                const payload = await response.json()
+
+                if (!response.ok || !payload.ok) {
+                    if (payload.errors && payload.errors.dataset) {
+                        setFieldError(payload.errors.dataset)
+                        setStatus(payload.errors.dataset.join(" "), "error")
+                    } else if (payload.errors && payload.errors.__all__) {
+                        setStatus(payload.errors.__all__.join(" "), "error")
+                    } else {
+                        setStatus("Batch prediction failed.", "error")
+                    }
+                    return
+                }
+
+                renderBatchResult(payload.result)
+                setStatus(`Processed ${payload.result.processed_count} rows successfully.`, "success")
+            } catch (error) {
+                setStatus("Batch prediction failed. Refresh the page and try again.", "error")
+            } finally {
+                submitButton.disabled = false
+                submitButton.classList.remove("opacity-60", "cursor-not-allowed")
+            }
+        })
+    })()
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <article class="bento-card xl:col-span-8">
+            <form method="post" enctype="multipart/form-data" class="upload-zone">
+                {% csrf_token %}
+                {% if dataset_upload_form.dataset.errors %}
+                    <div class="api-status api-status-error">{{ dataset_upload_form.dataset.errors|join:" " }}</div>
+                {% endif %}
+
+                <div class="mx-auto max-w-xl text-center">
+                    <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] bg-primary-container text-white shadow-panel">
+                        <span class="material-symbols-outlined text-4xl">dataset</span>
+                    </div>
+                    <h2 class="mt-6 font-headline text-3xl font-extrabold text-primary">Upload Your Lecturer Dataset</h2>
+                    <p class="mt-3 text-sm leading-7 text-on-surface-variant">This upload is private to your account. After upload, you will confirm the detected column mapping before anything becomes active on the dashboard.</p>
+
+                    <label class="mt-8 block cursor-pointer rounded-[2rem] border-2 border-dashed border-outline-variant/70 bg-surface-container-low px-6 py-10 transition hover:border-primary/40 hover:bg-surface-container">
+                        {{ dataset_upload_form.dataset }}
+                        <span class="material-symbols-outlined text-4xl text-secondary">cloud_upload</span>
+                        <span id="dataset-file-label" class="mt-3 block font-semibold text-primary">Choose a CSV file</span>
+                        <span class="mt-2 block text-sm text-on-surface-variant">Step 1 of 2: upload first, then review the column mapping before activation.</span>
+                    </label>
+
+                    <button type="submit" class="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                        <span class="material-symbols-outlined text-base">arrow_forward</span>
+                        Continue to Mapping Review
+                    </button>
+                </div>
+            </form>
+        </article>
+
+        <div class="space-y-6 xl:col-span-4">
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">How It Works</h2>
+                <div class="mt-5 space-y-3 text-sm text-on-surface-variant">
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        <p class="font-semibold text-primary">1. Upload your CSV</p>
+                        <p class="mt-1">The system reads the file headers and tries to match them to the portal's canonical fields.</p>
+                    </div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        <p class="font-semibold text-primary">2. Confirm detected mappings</p>
+                        <p class="mt-1">Review every required field and manually fix anything the auto-detector did not recognize.</p>
+                    </div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                        <p class="font-semibold text-primary">3. Activate your private dashboard</p>
+                        <p class="mt-1">Only your account will use this dataset for dashboard charts, student detail, and default form values.</p>
+                    </div>
+                </div>
+            </article>
+
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Expected Data</h2>
+                <p class="mt-3 text-sm text-on-surface-variant">Core fields still follow the existing prediction and dashboard schema. Column names can vary; the mapping step normalizes them after upload.</p>
+                <div class="mt-5 grid gap-3">
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">StudentID, GPA, GradeClass</div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">Age, Gender, ParentalEducation</div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">StudyTimeWeekly, Absences, ParentalSupport</div>
+                    <div class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">Extracurricular, Sports, Music, Volunteering</div>
+                </div>
+            </article>
+
+            {% if active_dataset %}
+                <article class="bento-card tone-success">
+                    <h2 class="font-headline text-xl font-bold">Current Active Dataset</h2>
+                    <p class="mt-3 text-sm">{{ active_dataset.original_filename }}</p>
+                    <p class="mt-1 text-sm">{{ active_dataset.row_count }} rows activated on {% if active_dataset.confirmed_at %}{{ active_dataset.confirmed_at|date:"M j, Y H:i" }}{% endif %}</p>
+                </article>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (() => {
+        const fileInput = document.querySelector('input[name="dataset"]')
+        const fileLabel = document.getElementById("dataset-file-label")
+        if (!fileInput || !fileLabel) {
+            return
+        }
+
+        fileInput.addEventListener("change", () => {
+            const selectedFile = fileInput.files && fileInput.files[0]
+            fileLabel.textContent = selectedFile ? selectedFile.name : "Choose a CSV file"
+        })
+    })()
+</script>
+{% endblock %}

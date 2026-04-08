@@ -1,0 +1,645 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+    <article class="bento-card xl:col-span-12">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h2 class="font-headline text-xl font-bold text-primary">My Active Dataset</h2>
+                {% if dataset_info %}
+                    <p class="mt-1 text-sm text-on-surface-variant">Your dashboard, student detail pages, and default form values are currently driven by this private lecturer dataset.</p>
+                {% else %}
+                    <p class="mt-1 text-sm text-on-surface-variant">Upload and confirm a private dataset to activate dashboard analytics for your account.</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'portal:dataset_upload' %}" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                <span class="material-symbols-outlined text-base">dataset</span>
+                {% if dataset_info %}Manage Dataset{% else %}Upload Dataset{% endif %}
+            </a>
+        </div>
+
+        {% if dataset_info %}
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+                <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                    <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">File</p>
+                    <p class="mt-2 font-headline text-lg font-bold text-primary">{{ dataset_info.original_filename }}</p>
+                    <p class="mt-1 text-sm text-on-surface-variant">Stored as {{ dataset_info.stored_filename }}</p>
+                </div>
+                <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                    <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">Rows</p>
+                    <p class="mt-2 font-headline text-lg font-bold text-primary">{{ dataset_info.row_count }}</p>
+                    <p class="mt-1 text-sm text-on-surface-variant">Available only to your lecturer account.</p>
+                </div>
+                <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                    <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">Activated</p>
+                    <p class="mt-2 font-headline text-lg font-bold text-primary">{% if dataset_info.confirmed_at %}{{ dataset_info.confirmed_at|date:"M j, Y H:i" }}{% else %}Pending{% endif %}</p>
+                    <p class="mt-1 text-sm text-on-surface-variant">Upload a replacement any time and confirm a new mapping.</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="mt-6 rounded-2xl border border-outline-variant/40 bg-surface-container-low px-5 py-5">
+                <p class="font-semibold text-primary">No dataset is active for your account yet.</p>
+                <p class="mt-2 text-sm text-on-surface-variant">The old global CSV is no longer used for lecturer dashboards. Use My Dataset to upload your own CSV, review the detected column mapping, and activate it.</p>
+            </div>
+        {% endif %}
+    </article>
+
+    <article class="bento-card xl:col-span-12">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h2 class="font-headline text-xl font-bold text-primary">Academic Period Filters</h2>
+                <p class="mt-1 text-sm text-on-surface-variant">Filter the dashboard by semester, intake, academic session, or date range when those fields exist in the dataset.</p>
+            </div>
+            <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">Active view: {{ period_filters.active_label }}</span>
+        </div>
+
+        {% if period_filters.available %}
+            <form method="get" class="mt-6 grid gap-4 lg:grid-cols-5">
+                <label class="space-y-2 text-sm font-medium text-on-surface-variant lg:col-span-2">
+                    <span>Period Dimension</span>
+                    <select name="period_dimension" class="form-field" onchange="this.form.submit()">
+                        {% for dimension in period_filters.dimensions %}
+                            <option value="{{ dimension.column }}" {% if period_filters.selected_dimension == dimension.column %}selected{% endif %}>{{ dimension.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                {% if period_filters.selected_type == 'categorical' %}
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>Current Period</span>
+                        <select name="period_value" class="form-field">
+                            {% for option in period_filters.value_options %}
+                                <option value="{{ option }}" {% if period_filters.selected_value == option %}selected{% endif %}>{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>Compare With</span>
+                        <select name="compare_value" class="form-field">
+                            <option value="">No comparison</option>
+                            {% for option in period_filters.compare_options %}
+                                <option value="{{ option }}" {% if period_filters.selected_compare_value == option %}selected{% endif %}>{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <div class="flex items-end gap-3 lg:justify-end">
+                        <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                            <span class="material-symbols-outlined text-base">filter_alt</span>
+                            Apply Filters
+                        </button>
+                        <a href="{% url 'portal:dashboard' %}" class="rounded-2xl bg-surface-container px-5 py-3 text-sm font-semibold text-primary transition hover:bg-surface-container-high">Reset</a>
+                    </div>
+                {% else %}
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>From</span>
+                        <input name="date_from" type="date" min="{{ period_filters.min_date }}" max="{{ period_filters.max_date }}" value="{{ period_filters.date_from }}" class="form-field">
+                    </label>
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>To</span>
+                        <input name="date_to" type="date" min="{{ period_filters.min_date }}" max="{{ period_filters.max_date }}" value="{{ period_filters.date_to }}" class="form-field">
+                    </label>
+                    <div class="flex flex-wrap items-end justify-between gap-3 lg:col-span-2">
+                        <label class="flex items-center gap-2 rounded-2xl bg-surface-container-low px-4 py-3 text-sm font-medium text-on-surface-variant">
+                            <input type="checkbox" name="compare_previous" value="1" {% if period_filters.compare_previous %}checked{% endif %} class="rounded border-outline-variant text-primary focus:ring-primary">
+                            <span>Compare previous range</span>
+                        </label>
+                        <div class="flex gap-3">
+                            <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                                <span class="material-symbols-outlined text-base">filter_alt</span>
+                                Apply Filters
+                            </button>
+                            <a href="{% url 'portal:dashboard' %}" class="rounded-2xl bg-surface-container px-5 py-3 text-sm font-semibold text-primary transition hover:bg-surface-container-high">Reset</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+        {% else %}
+            <div class="mt-6 rounded-2xl border border-outline-variant/40 bg-surface-container-low px-5 py-5">
+                <p class="font-semibold text-primary">Period filters are ready, but this dataset does not include time fields yet.</p>
+                <p class="mt-2 text-sm text-on-surface-variant">{{ period_filters.helper_text }}</p>
+            </div>
+        {% endif %}
+    </article>
+
+    {% if summary_cards %}
+        {% for card in summary_cards %}
+            <article class="bento-card xl:col-span-3 {% if card.tone == 'accent' %}bg-primary-container text-white{% elif card.tone == 'danger' %}tone-danger{% endif %}">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-medium {% if card.tone == 'accent' %}text-white/75{% else %}text-on-surface-variant{% endif %}">{{ card.label }}</p>
+                        <p class="mt-3 font-headline text-4xl font-extrabold tracking-tight {% if card.tone == 'accent' %}text-white{% elif card.tone == 'danger' %}{% else %}text-primary{% endif %}">{{ card.value }}</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl {% if card.tone == 'accent' %}bg-white/10 text-white{% elif card.tone == 'danger' %}tone-danger-subtle{% else %}bg-secondary-container/40 text-secondary{% endif %}">
+                        <span class="material-symbols-outlined">{{ card.icon }}</span>
+                    </div>
+                </div>
+                <p class="mt-5 text-sm {% if card.tone == 'accent' %}text-white/70{% else %}text-on-surface-variant{% endif %}">{{ card.support }}</p>
+            </article>
+        {% endfor %}
+
+        {% if period_comparison %}
+            <article class="bento-card xl:col-span-12">
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-primary">Period Comparison</h2>
+                        <p class="text-sm text-on-surface-variant">Compare the current view against {{ period_comparison.comparison_label }}.</p>
+                    </div>
+                    <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">{{ period_comparison.current_label }}</span>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {% for card in period_comparison.cards %}
+                        <div class="rounded-2xl border border-outline-variant/40 bg-surface-container-low px-4 py-4">
+                            <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">{{ card.label }}</p>
+                            <p class="mt-2 font-headline text-2xl font-bold text-primary">{{ card.current_display }}</p>
+                            <p class="mt-1 text-sm text-on-surface-variant">Previous: {{ card.previous_display }}</p>
+                            <p class="mt-3 text-sm font-semibold {% if card.tone == 'positive' %}tone-success-subtle{% elif card.tone == 'negative' %}tone-danger-subtle{% else %}text-on-surface-variant{% endif %}" style="background:transparent;">Delta: {{ card.delta_display }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+        {% endif %}
+
+        {% if intervention_analytics %}
+            <article class="bento-card xl:col-span-12">
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-primary">Intervention Outcome Analytics</h2>
+                        <p class="text-sm text-on-surface-variant">Track whether lecturer actions are actually improving student outcomes over time.</p>
+                    </div>
+                    <a href="{% url 'portal:intervention_history' %}" class="rounded-full bg-surface-container px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container-high">Filter and export history</a>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {% for card in intervention_analytics.cards %}
+                        <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                            <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">{{ card.label }}</p>
+                            <p class="mt-2 font-headline text-2xl font-bold text-primary">{{ card.value }}</p>
+                            <p class="mt-1 text-sm text-on-surface-variant">{{ card.support }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-6 grid gap-6 xl:grid-cols-12">
+                    <div class="xl:col-span-5">
+                        <h3 class="font-headline text-lg font-bold text-primary">Outcome Breakdown</h3>
+                        <div class="mt-4 space-y-3">
+                            {% for item in intervention_analytics.outcome_breakdown %}
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between gap-4 text-sm">
+                                        <span class="font-semibold text-primary">{{ item.label }}</span>
+                                        <span class="text-on-surface-variant">{{ item.count }} records</span>
+                                    </div>
+                                    <div class="h-2 rounded-full bg-surface-container">
+                                        <div class="h-2 rounded-full bg-gradient-to-r from-secondary to-primary" style="width: {{ item.percent }}%;"></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="xl:col-span-3">
+                        <h3 class="font-headline text-lg font-bold text-primary">Category Load</h3>
+                        <div class="mt-4 space-y-3">
+                            {% for item in intervention_analytics.category_breakdown %}
+                                <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="font-semibold text-primary">{{ item.label }}</span>
+                                        <span class="text-sm text-on-surface-variant">{{ item.count }}</span>
+                                    </div>
+                                    <p class="mt-2 text-xs uppercase tracking-[0.18em] text-on-surface-variant">{{ item.percent }}% of tracked actions</p>
+                                </div>
+                            {% empty %}
+                                <p class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">No interventions are being tracked yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="xl:col-span-4">
+                        <h3 class="font-headline text-lg font-bold text-primary">Recent Intervention Updates</h3>
+                        <div class="mt-4 space-y-3">
+                            {% for record in recent_interventions %}
+                                <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="font-semibold text-primary">{{ record.title }}</p>
+                                        <span class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] {{ record.outcome_style }}">{{ record.get_outcome_display }}</span>
+                                    </div>
+                                    <p class="mt-2 text-sm text-on-surface-variant">Student {{ record.student_id }} · {{ record.updated_at|date:"M j, Y H:i" }}</p>
+                                </div>
+                            {% empty %}
+                                <p class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">No intervention updates yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </article>
+        {% endif %}
+
+        <article class="bento-card xl:col-span-8">
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="font-headline text-xl font-bold text-primary">Grade Distribution</h2>
+                    <p class="text-sm text-on-surface-variant">Class balance from the current dataset snapshot.</p>
+                </div>
+                {% if model_snapshot %}
+                    <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">Best model: {{ model_snapshot.name }}</span>
+                {% endif %}
+            </div>
+            <div class="chart-shell h-80">
+                <canvas id="gradeChart"></canvas>
+            </div>
+        </article>
+
+        <article class="bento-card xl:col-span-4">
+            <h2 class="font-headline text-xl font-bold text-primary">Risk Distribution</h2>
+            <p class="mt-1 text-sm text-on-surface-variant">High, moderate, and low risk based on current heuristics and grade signals.</p>
+            <div class="chart-shell mt-6 h-80">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </article>
+
+        <article class="bento-card xl:col-span-6">
+            <div class="mb-5">
+                <h2 class="font-headline text-xl font-bold text-primary">Study Time vs GPA</h2>
+                <p class="text-sm text-on-surface-variant">A quick visual check of whether higher study hours are translating into GPA gains.</p>
+            </div>
+            <div class="chart-shell h-80">
+                <canvas id="studyChart"></canvas>
+            </div>
+        </article>
+
+        <article class="bento-card xl:col-span-6">
+            <div class="mb-5">
+                <h2 class="font-headline text-xl font-bold text-primary">Absences vs GPA</h2>
+                <p class="text-sm text-on-surface-variant">Use this block during your presentation to explain why attendance matters in the model.</p>
+            </div>
+            <div class="chart-shell h-80">
+                <canvas id="absencesChart"></canvas>
+            </div>
+        </article>
+
+        <article class="bento-card xl:col-span-7">
+            <div class="mb-6 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="font-headline text-xl font-bold text-primary">Top At-Risk Students</h2>
+                    <p class="text-sm text-on-surface-variant">Sorted by the current risk score so lecturers can act quickly.</p>
+                </div>
+                <a href="{% url 'portal:batch_upload' %}" class="rounded-full bg-surface-container px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container-high">Run batch prediction</a>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl">
+                <table class="min-w-full border-collapse text-left">
+                    <thead>
+                        <tr class="border-b border-outline-variant/50 text-[11px] uppercase tracking-[0.22em] text-on-surface-variant">
+                            <th class="pb-4 pr-4 font-bold">Student</th>
+                            <th class="pb-4 pr-4 font-bold">Grade</th>
+                            <th class="pb-4 pr-4 font-bold">GPA</th>
+                            <th class="pb-4 pr-4 font-bold">Absences</th>
+                            <th class="pb-4 pr-4 font-bold">Risk</th>
+                            <th class="pb-4 text-right font-bold">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/40">
+                        {% for student in top_students %}
+                            <tr class="text-sm text-on-surface-variant transition hover:bg-surface-container-low">
+                                <td class="py-4 pr-4 font-semibold text-primary">{{ student.display_name }}</td>
+                                <td class="py-4 pr-4 font-semibold text-primary">{{ student.grade }}</td>
+                                <td class="py-4 pr-4">{{ student.gpa }}</td>
+                                <td class="py-4 pr-4">{{ student.absences }}</td>
+                                <td class="py-4 pr-4">
+                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold {{ student.risk_style }}">{{ student.risk_label }} · {{ student.risk_score }}</span>
+                                </td>
+                                <td class="py-4 text-right">
+                                    <a href="{% url 'portal:student_detail' student.student_id %}" class="text-sm font-semibold text-primary hover:underline">View detail</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <div class="space-y-6 xl:col-span-5">
+            <article class="bento-card">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-primary">Model Snapshot</h2>
+                        <p class="text-sm text-on-surface-variant">Keep this visible during the demo to justify the ML pipeline.</p>
+                    </div>
+                    <span class="material-symbols-outlined text-secondary">model_training</span>
+                </div>
+
+                {% if model_snapshot %}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="rounded-2xl bg-surface-container-low p-4">
+                            <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">Model</p>
+                            <p class="mt-2 font-headline text-lg font-bold text-primary">{{ model_snapshot.name }}</p>
+                        </div>
+                        <div class="rounded-2xl bg-surface-container-low p-4">
+                            <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">F1 Score</p>
+                            <p class="mt-2 font-headline text-lg font-bold text-primary">{{ model_snapshot.f1_score }}</p>
+                        </div>
+                        <div class="rounded-2xl bg-surface-container-low p-4">
+                            <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">Accuracy</p>
+                            <p class="mt-2 font-headline text-lg font-bold text-primary">{{ model_snapshot.accuracy }}</p>
+                        </div>
+                        <div class="rounded-2xl bg-surface-container-low p-4">
+                            <p class="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">Dataset Rows</p>
+                            <p class="mt-2 font-headline text-lg font-bold text-primary">{{ model_snapshot.dataset_rows }}</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">No trained model was detected yet. Visit Predict or Upload to trigger model preparation.</p>
+                {% endif %}
+            </article>
+
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Top Predictive Signals</h2>
+                <div class="mt-6 space-y-4">
+                    {% for feature in feature_insights %}
+                        <div>
+                            <div class="mb-2 flex items-center justify-between text-sm font-semibold text-primary">
+                                <span>{{ feature.name }}</span>
+                                <span>{{ feature.value }}%</span>
+                            </div>
+                            <div class="h-2 rounded-full bg-surface-container">
+                                <div class="h-2 rounded-full bg-gradient-to-r from-secondary to-primary" style="width: {{ feature.value }}%;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Intervention Suggestions</h2>
+                <div class="mt-6 space-y-3">
+                    {% for intervention in interventions %}
+                        <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                            <div class="flex items-start gap-3">
+                                <div class="mt-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                                    <span class="material-symbols-outlined">{{ intervention.icon }}</span>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-primary">{{ intervention.title }}</p>
+                                    <p class="mt-1 text-sm text-on-surface-variant">{{ intervention.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="rounded-2xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">No intervention messages are available until the dataset is loaded.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            {% include 'partials/api_access_card.html' %}
+        </div>
+    {% else %}
+        <article class="bento-card xl:col-span-7">
+            <h2 class="font-headline text-2xl font-bold text-primary">{{ dashboard_empty_title }}</h2>
+            <p class="mt-3 max-w-2xl text-on-surface-variant">{{ dashboard_empty_message }}</p>
+            <div class="mt-6">
+                <a href="{% url 'portal:dataset_upload' %}" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                    <span class="material-symbols-outlined text-base">dataset</span>
+                    Open My Dataset
+                </a>
+            </div>
+        </article>
+        <div class="xl:col-span-5">
+            {% include 'partials/api_access_card.html' %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ grade_chart|json_script:"grade-chart-data" }}
+{{ risk_chart|json_script:"risk-chart-data" }}
+{{ study_scatter|json_script:"study-scatter-data" }}
+{{ absences_scatter|json_script:"absences-scatter-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2"></script>
+<script>
+    const gradeData = JSON.parse(document.getElementById("grade-chart-data").textContent)
+    const riskData = JSON.parse(document.getElementById("risk-chart-data").textContent)
+    const studyScatter = JSON.parse(document.getElementById("study-scatter-data").textContent)
+    const absencesScatter = JSON.parse(document.getElementById("absences-scatter-data").textContent)
+
+    const cs = getComputedStyle(document.documentElement)
+    const tickColor = cs.getPropertyValue("--chart-tick").trim()
+    const gridColor = cs.getPropertyValue("--grid-line").trim()
+    const scatterPrimary = cs.getPropertyValue("--chart-scatter-primary").trim()
+    const scatterError = cs.getPropertyValue("--chart-scatter-error").trim()
+
+    const commonGrid = {
+        color: gridColor,
+        drawBorder: false,
+    }
+
+    const gradeChartEl = document.getElementById("gradeChart")
+    if (gradeChartEl) {
+        new Chart(gradeChartEl, {
+            type: "bar",
+            data: {
+                labels: gradeData.labels,
+                datasets: [{
+                    label: "Students",
+                    data: gradeData.counts,
+                    backgroundColor: ["#1b263b", "#335678", "#47607e", "#7d94ab", "#c2dcff"],
+                    borderRadius: 14,
+                    borderSkipped: false,
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: tickColor } },
+                    y: { grid: commonGrid, ticks: { color: tickColor } },
+                },
+            },
+        })
+    }
+
+    const riskChartEl = document.getElementById("riskChart")
+    if (riskChartEl) {
+        new Chart(riskChartEl, {
+            type: "doughnut",
+            data: {
+                labels: riskData.labels,
+                datasets: [{
+                    data: riskData.counts,
+                    backgroundColor: ["#ba1a1a", "#f59e0b", "#10b981"],
+                    borderWidth: 0,
+                    hoverOffset: 6,
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                cutout: "72%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { usePointStyle: true, color: tickColor, padding: 18 },
+                    },
+                },
+            },
+        })
+    }
+
+    const studyChartEl = document.getElementById("studyChart")
+    if (studyChartEl) {
+        new Chart(studyChartEl, {
+            type: "scatter",
+            data: {
+                datasets: [{
+                    label: "Study Time vs GPA",
+                    data: studyScatter,
+                    backgroundColor: scatterPrimary,
+                    pointRadius: 4,
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { title: { display: true, text: "Study Time Weekly", color: tickColor }, grid: commonGrid, ticks: { color: tickColor } },
+                    y: { title: { display: true, text: "GPA", color: tickColor }, min: 0, max: 4, grid: commonGrid, ticks: { color: tickColor } },
+                },
+            },
+        })
+    }
+
+    const absencesChartEl = document.getElementById("absencesChart")
+    if (absencesChartEl) {
+        new Chart(absencesChartEl, {
+            type: "scatter",
+            data: {
+                datasets: [{
+                    label: "Absences vs GPA",
+                    data: absencesScatter,
+                    backgroundColor: scatterError,
+                    pointRadius: 4,
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { title: { display: true, text: "Absences", color: tickColor }, grid: commonGrid, ticks: { color: tickColor } },
+                    y: { title: { display: true, text: "GPA", color: tickColor }, min: 0, max: 4, grid: commonGrid, ticks: { color: tickColor } },
+                },
+            },
+        })
+    }
+
+    const apiAccessCard = document.getElementById("api-access-card")
+    if (apiAccessCard) {
+        const issueButton = document.getElementById("issue-api-token-button")
+        const revokeButton = document.getElementById("revoke-api-token-button")
+        const issueLabel = document.getElementById("issue-api-token-label")
+        const statusEl = document.getElementById("api-access-status")
+        const tokenDisplay = document.getElementById("api-token-display")
+        const tokenValue = document.getElementById("api-token-value")
+        const tokenPrefix = document.getElementById("api-token-prefix")
+        const tokenCreatedAt = document.getElementById("api-token-created-at")
+        const tokenLastUsedAt = document.getElementById("api-token-last-used-at")
+
+        const toneClasses = {
+            info: "api-status api-status-info mt-4",
+            success: "api-status api-status-success mt-4",
+            error: "api-status api-status-error mt-4",
+        }
+
+        function getCookie(name) {
+            const cookieValue = document.cookie
+                .split("; ")
+                .find((row) => row.startsWith(`${name}=`))
+            return cookieValue ? decodeURIComponent(cookieValue.split("=")[1]) : ""
+        }
+
+        function setStatus(message, tone) {
+            if (!message) {
+                statusEl.textContent = ""
+                statusEl.className = "api-status hidden mt-4"
+                return
+            }
+
+            statusEl.textContent = message
+            statusEl.className = toneClasses[tone] || toneClasses.info
+        }
+
+        function setLoading(button, isLoading) {
+            button.disabled = isLoading
+            button.classList.toggle("opacity-60", isLoading)
+            button.classList.toggle("cursor-not-allowed", isLoading)
+        }
+
+        function resetTokenSummary() {
+            tokenPrefix.textContent = "No active token"
+            tokenCreatedAt.textContent = "Not yet issued"
+            tokenLastUsedAt.textContent = "Never"
+            issueLabel.textContent = "Generate Token"
+            revokeButton.classList.add("hidden")
+        }
+
+        issueButton.addEventListener("click", async () => {
+            setStatus("Generating API token...", "info")
+            setLoading(issueButton, true)
+
+            try {
+                const response = await fetch(apiAccessCard.dataset.issueUrl, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                })
+                const payload = await response.json()
+
+                if (!response.ok || !payload.ok) {
+                    const errorText = payload.errors?.__all__?.join(" ") || "Could not generate an API token."
+                    setStatus(errorText, "error")
+                    return
+                }
+
+                tokenPrefix.textContent = `${payload.result.token_prefix}...`
+                tokenCreatedAt.textContent = payload.result.created_at
+                tokenLastUsedAt.textContent = payload.result.last_used_at
+                issueLabel.textContent = "Regenerate Token"
+                revokeButton.classList.remove("hidden")
+                tokenValue.value = payload.result.authorization_header
+                tokenDisplay.classList.remove("hidden")
+                setStatus("API token generated successfully. Copy it now and store it safely.", "success")
+            } catch (error) {
+                setStatus("Could not generate an API token. Refresh the page and try again.", "error")
+            } finally {
+                setLoading(issueButton, false)
+            }
+        })
+
+        revokeButton.addEventListener("click", async () => {
+            setStatus("Revoking API token...", "info")
+            setLoading(revokeButton, true)
+
+            try {
+                const response = await fetch(apiAccessCard.dataset.revokeUrl, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                })
+                const payload = await response.json()
+
+                if (!response.ok || !payload.ok) {
+                    const errorText = payload.errors?.__all__?.join(" ") || "Could not revoke the API token."
+                    setStatus(errorText, "error")
+                    return
+                }
+
+                tokenDisplay.classList.add("hidden")
+                tokenValue.value = ""
+                resetTokenSummary()
+                setStatus("API token revoked successfully.", "success")
+            } catch (error) {
+                setStatus("Could not revoke the API token. Refresh the page and try again.", "error")
+            } finally {
+                setLoading(revokeButton, false)
+            }
+        })
+    }
+</script>
+{% endblock %}

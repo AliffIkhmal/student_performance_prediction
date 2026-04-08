@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<main class="bg-academic-hero flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+    <button id="theme-toggle" type="button" class="fixed right-5 top-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white shadow-sm backdrop-blur transition hover:bg-white/20" aria-label="Toggle dark mode">
+        <span class="material-symbols-outlined theme-icon-light">dark_mode</span>
+        <span class="material-symbols-outlined theme-icon-dark hidden">light_mode</span>
+    </button>
+    <div class="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-surface-bright/95 shadow-panel backdrop-blur">
+        <div class="grid lg:grid-cols-[1.1fr,0.9fr]">
+            <section class="relative hidden overflow-hidden lg:block" style="min-height:480px;">
+                <img src="/media/Elegant%20university%20building%20at%20twilight.png"
+                     alt="University building at twilight"
+                     class="absolute inset-0 h-full w-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+                <div class="relative flex h-full flex-col justify-end px-8 py-10 text-white sm:px-10 lg:px-12">
+                    <div class="inline-flex w-fit items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
+                        <span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">shield_lock</span>
+                        Secure academic access
+                    </div>
+                    <h1 class="mt-6 max-w-lg font-headline text-3xl font-extrabold tracking-tight drop-shadow-lg sm:text-4xl">
+                        Bento-style academic intelligence for early student support.
+                    </h1>
+                    <p class="mt-4 max-w-xl text-sm leading-7 text-white/90 drop-shadow sm:text-base">
+                        Predict grades, surface at-risk students, and empower lecturers, advisors, and academic admins.
+                    </p>
+                </div>
+            </section>
+
+            <section class="px-8 py-10 sm:px-10 lg:px-12">
+                {% if messages %}
+                    <div class="mb-6 space-y-3">
+                        {% for message in messages %}
+                            <div class="message-card {% if message.tags == 'error' %}tone-danger{% elif message.tags == 'success' %}tone-success{% else %}tone-info{% endif %}">
+                                <span class="material-symbols-outlined text-base">{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}check_circle{% else %}info{% endif %}</span>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-8 text-center lg:text-left">
+                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary text-white shadow-panel lg:mx-0">
+                        <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+                    </div>
+                    <h2 class="mt-5 font-headline text-3xl font-extrabold tracking-tight text-primary">Scholar Bento</h2>
+                    <p class="mt-2 text-sm text-on-surface-variant">Student Performance Prediction System</p>
+                </div>
+
+                <form method="post" class="space-y-5">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+                    {% if login_form.non_field_errors %}
+                        <div class="rounded-2xl px-4 py-4 text-sm font-medium tone-danger">
+                            {{ login_form.non_field_errors|join:" " }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <label for="username" class="mb-2 block text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Username</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">person</span>
+                            {{ login_form.username }}
+                        </div>
+                        {% if login_form.username.errors %}
+                            <p class="field-error">{{ login_form.username.errors|join:" " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="password" class="mb-2 block text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Password</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+                            {{ login_form.password }}
+                            <button type="button" class="absolute inset-y-0 right-3 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full border-0 bg-transparent p-0 text-on-surface-variant" data-password-toggle data-password-target="{{ login_form.password.id_for_label }}" aria-label="Show password">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </button>
+                        </div>
+                        {% if login_form.password.errors %}
+                            <p class="field-error">{{ login_form.password.errors|join:" " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm text-on-surface-variant">
+                        <label class="flex items-center gap-2">
+                            {{ login_form.keep_session_active }}
+                            <span>Keep session active</span>
+                        </label>
+                        <span>Authentication uses Django database users.</span>
+                    </div>
+
+                    <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-primary to-primary-container px-5 py-3.5 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                        <span>Sign In</span>
+                        <span class="material-symbols-outlined text-lg">login</span>
+                    </button>
+                </form>
+
+                <div class="mt-8 rounded-3xl border border-outline-variant/40 bg-surface-container-low px-5 py-4 text-sm text-on-surface-variant">
+                    Default developer account: admin / admin123. Accounts are now stored only in Django's database-backed auth system.
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+{% endblock %}

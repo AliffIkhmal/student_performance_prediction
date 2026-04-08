@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+    <form id="prediction-form" method="post" class="space-y-6 xl:col-span-8" data-api-url="{% url 'portal:predict_api' %}">
+        {% csrf_token %}
+        <div id="prediction-status" class="api-status {% if prediction_form.non_field_errors %}api-status-error{% else %}hidden{% endif %}">
+            {% if prediction_form.non_field_errors %}{{ prediction_form.non_field_errors|join:" " }}{% endif %}
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-2">
+            <article class="bento-card">
+                <div class="mb-5 flex items-center gap-3">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                        <span class="material-symbols-outlined">person</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-primary">Student Profile</h2>
+                        <p class="text-sm text-on-surface-variant">Map the current features already used in your model.</p>
+                    </div>
+                </div>
+
+                <div class="grid gap-4">
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>Age</span>
+                        {{ prediction_form.Age }}
+                        <p class="field-error{% if not prediction_form.Age.errors %} hidden{% endif %}" data-field-error="Age">{{ prediction_form.Age.errors|join:" " }}</p>
+                    </label>
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>Gender</span>
+                        {{ prediction_form.Gender }}
+                        <p class="field-error{% if not prediction_form.Gender.errors %} hidden{% endif %}" data-field-error="Gender">{{ prediction_form.Gender.errors|join:" " }}</p>
+                    </label>
+                </div>
+            </article>
+
+            <article class="bento-card">
+                <div class="mb-5 flex items-center gap-3">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                        <span class="material-symbols-outlined">groups</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-primary">Family Support</h2>
+                        <p class="text-sm text-on-surface-variant">These fields affect the current classifier and intervention logic.</p>
+                    </div>
+                </div>
+
+                <div class="grid gap-4">
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>Parental Education</span>
+                        {{ prediction_form.ParentalEducation }}
+                        <p class="field-error{% if not prediction_form.ParentalEducation.errors %} hidden{% endif %}" data-field-error="ParentalEducation">{{ prediction_form.ParentalEducation.errors|join:" " }}</p>
+                    </label>
+                    <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                        <span>Parental Support</span>
+                        {{ prediction_form.ParentalSupport }}
+                        <p class="field-error{% if not prediction_form.ParentalSupport.errors %} hidden{% endif %}" data-field-error="ParentalSupport">{{ prediction_form.ParentalSupport.errors|join:" " }}</p>
+                    </label>
+                </div>
+            </article>
+        </div>
+
+        <article class="bento-card">
+            <div class="mb-5 flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                    <span class="material-symbols-outlined">schedule</span>
+                </div>
+                <div>
+                    <h2 class="font-headline text-xl font-bold text-primary">Academic Routine</h2>
+                    <p class="text-sm text-on-surface-variant">Use realistic values so your presentation shows believable outputs.</p>
+                </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                    <span>Study Time Weekly</span>
+                    {{ prediction_form.StudyTimeWeekly }}
+                    <p class="field-error{% if not prediction_form.StudyTimeWeekly.errors %} hidden{% endif %}" data-field-error="StudyTimeWeekly">{{ prediction_form.StudyTimeWeekly.errors|join:" " }}</p>
+                </label>
+                <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                    <span>Absences</span>
+                    {{ prediction_form.Absences }}
+                    <p class="field-error{% if not prediction_form.Absences.errors %} hidden{% endif %}" data-field-error="Absences">{{ prediction_form.Absences.errors|join:" " }}</p>
+                </label>
+            </div>
+        </article>
+
+        <article class="bento-card">
+            <div class="mb-5 flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                    <span class="material-symbols-outlined">interests</span>
+                </div>
+                <div>
+                    <h2 class="font-headline text-xl font-bold text-primary">Activities & Engagement</h2>
+                    <p class="text-sm text-on-surface-variant">Binary activity features are shown as simple yes or no selectors for demo-friendly input.</p>
+                </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                    <span>Extracurricular</span>
+                    {{ prediction_form.Extracurricular }}
+                    <p class="field-error{% if not prediction_form.Extracurricular.errors %} hidden{% endif %}" data-field-error="Extracurricular">{{ prediction_form.Extracurricular.errors|join:" " }}</p>
+                </label>
+                <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                    <span>Sports</span>
+                    {{ prediction_form.Sports }}
+                    <p class="field-error{% if not prediction_form.Sports.errors %} hidden{% endif %}" data-field-error="Sports">{{ prediction_form.Sports.errors|join:" " }}</p>
+                </label>
+                <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                    <span>Music</span>
+                    {{ prediction_form.Music }}
+                    <p class="field-error{% if not prediction_form.Music.errors %} hidden{% endif %}" data-field-error="Music">{{ prediction_form.Music.errors|join:" " }}</p>
+                </label>
+                <label class="space-y-2 text-sm font-medium text-on-surface-variant">
+                    <span>Volunteering</span>
+                    {{ prediction_form.Volunteering }}
+                    <p class="field-error{% if not prediction_form.Volunteering.errors %} hidden{% endif %}" data-field-error="Volunteering">{{ prediction_form.Volunteering.errors|join:" " }}</p>
+                </label>
+            </div>
+        </article>
+
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'portal:predict' %}" class="rounded-2xl bg-surface-container px-5 py-3 text-sm font-semibold text-primary transition hover:bg-surface-container-high">Reset Form</a>
+            <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-headline text-sm font-bold text-white shadow-panel transition hover:opacity-95">
+                <span class="material-symbols-outlined text-base">bolt</span>
+                Predict Performance
+            </button>
+        </div>
+    </form>
+
+    <div class="space-y-6 xl:col-span-4">
+        <article id="prediction-empty" class="bento-card bento-placeholder min-h-[420px]{% if prediction %} hidden{% endif %}">
+            <div class="mx-auto max-w-sm text-center">
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary-container/40 text-secondary">
+                    <span class="material-symbols-outlined text-3xl">insights</span>
+                </div>
+                <h2 class="mt-5 font-headline text-2xl font-bold text-primary">Run a prediction</h2>
+                <p class="mt-3 text-sm leading-7 text-on-surface-variant">This page now uses your real project features instead of generic mock fields. Submit the form to generate grade, risk, and explainability blocks.</p>
+            </div>
+        </article>
+
+        <div id="prediction-results" class="space-y-6{% if not prediction %} hidden{% endif %}">
+            <article class="bento-card bg-primary-container text-white">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-[11px] uppercase tracking-[0.2em] text-white/60">Prediction Outcome</p>
+                        <h2 class="mt-2 font-headline text-2xl font-extrabold">Analytical Projection</h2>
+                    </div>
+                    <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold">ML RESULT</span>
+                </div>
+
+                <div class="mt-8 flex items-center gap-5">
+                    <div class="flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/5">
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">Grade</span>
+                        <span id="prediction-grade" class="font-headline text-4xl font-black">{{ prediction.predicted_grade|default:"" }}</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="mb-3 flex items-center justify-between text-sm text-white/75">
+                            <span>Confidence</span>
+                            <span id="prediction-confidence-text" class="font-bold text-white">{% if prediction %}{{ prediction.confidence }}%{% endif %}</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-white/10">
+                            <div id="prediction-confidence-bar" class="h-2 rounded-full bg-sky-300" style="width: {% if prediction %}{{ prediction.confidence }}{% else %}0{% endif %}%;"></div>
+                        </div>
+                        <div id="prediction-risk-badge" class="mt-4 inline-flex rounded-full px-3 py-1 text-xs font-bold {% if prediction %}{{ prediction.risk_style }}{% endif %}">
+                            {% if prediction %}{{ prediction.risk_label }} · {{ prediction.risk_score }}/100{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Key Factors</h2>
+                <div id="prediction-factors" class="mt-5 space-y-3">
+                    {% for factor in prediction.factors %}
+                        <div class="rounded-2xl border px-4 py-4 {% if factor.tone == 'negative' %}tone-danger{% elif factor.tone == 'positive' %}tone-success{% else %}border-outline-variant/40 bg-surface-container-low{% endif %}">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-semibold text-primary">{{ factor.title }}</p>
+                                    <p class="mt-1 text-sm text-on-surface-variant">{{ factor.description }}</p>
+                                </div>
+                                <span class="rounded-full px-3 py-1 text-xs font-bold {% if factor.impact > 0 %}tone-success-subtle{% elif factor.impact < 0 %}tone-danger-subtle{% else %}bg-surface-container text-on-surface-variant{% endif %}">
+                                    {% if factor.impact > 0 %}+{% endif %}{{ factor.impact }}%
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="bento-card">
+                <h2 class="font-headline text-xl font-bold text-primary">Recommended Actions</h2>
+                <div id="prediction-actions" class="mt-5 space-y-3">
+                    {% for action in prediction.recommendations %}
+                        <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                                    <span class="material-symbols-outlined">{{ action.icon }}</span>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-primary">{{ action.title }}</p>
+                                    <p class="mt-1 text-sm text-on-surface-variant">{{ action.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (() => {
+        const form = document.getElementById("prediction-form")
+        if (!form) {
+            return
+        }
+
+        const fieldNames = [
+            "Age",
+            "Gender",
+            "ParentalEducation",
+            "StudyTimeWeekly",
+            "Absences",
+            "ParentalSupport",
+            "Extracurricular",
+            "Sports",
+            "Music",
+            "Volunteering",
+        ]
+        const statusEl = document.getElementById("prediction-status")
+        const emptyEl = document.getElementById("prediction-empty")
+        const resultsEl = document.getElementById("prediction-results")
+        const submitButton = form.querySelector("button[type='submit']")
+
+        const toneClasses = {
+            info: "api-status api-status-info",
+            success: "api-status api-status-success",
+            error: "api-status api-status-error",
+        }
+
+        const factorCardClasses = {
+            negative: "rounded-2xl border px-4 py-4 tone-danger",
+            positive: "rounded-2xl border px-4 py-4 tone-success",
+            neutral: "rounded-2xl border border-outline-variant/40 bg-surface-container-low px-4 py-4",
+        }
+
+        function setStatus(message, tone) {
+            if (!message) {
+                statusEl.textContent = ""
+                statusEl.className = "api-status hidden"
+                return
+            }
+            statusEl.textContent = message
+            statusEl.className = toneClasses[tone] || toneClasses.info
+        }
+
+        function clearFieldErrors() {
+            fieldNames.forEach((fieldName) => {
+                const errorEl = form.querySelector(`[data-field-error="${fieldName}"]`)
+                const fieldEl = form.querySelector(`[name="${fieldName}"]`)
+                if (errorEl) {
+                    errorEl.textContent = ""
+                    errorEl.classList.add("hidden")
+                }
+                if (fieldEl) {
+                    fieldEl.classList.remove("form-field-invalid")
+                }
+            })
+        }
+
+        function setFieldError(fieldName, messages) {
+            const errorEl = form.querySelector(`[data-field-error="${fieldName}"]`)
+            const fieldEl = form.querySelector(`[name="${fieldName}"]`)
+            if (errorEl) {
+                errorEl.textContent = messages.join(" ")
+                errorEl.classList.remove("hidden")
+            }
+            if (fieldEl) {
+                fieldEl.classList.add("form-field-invalid")
+            }
+        }
+
+        function impactBadgeClass(impact) {
+            if (impact > 0) {
+                return "tone-success-subtle"
+            }
+            if (impact < 0) {
+                return "tone-danger-subtle"
+            }
+            return "bg-surface-container text-on-surface-variant"
+        }
+
+        function renderPrediction(result) {
+            document.getElementById("prediction-grade").textContent = result.predicted_grade
+            document.getElementById("prediction-confidence-text").textContent = `${result.confidence}%`
+            document.getElementById("prediction-confidence-bar").style.width = `${result.confidence}%`
+
+            const riskBadge = document.getElementById("prediction-risk-badge")
+            riskBadge.className = `mt-4 inline-flex rounded-full px-3 py-1 text-xs font-bold ${result.risk_style}`
+            riskBadge.textContent = `${result.risk_label} · ${result.risk_score}/100`
+
+            document.getElementById("prediction-factors").innerHTML = result.factors.map((factor) => {
+                const sign = factor.impact > 0 ? "+" : ""
+                return `
+                    <div class="${factorCardClasses[factor.tone] || factorCardClasses.neutral}">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="font-semibold text-primary">${factor.title}</p>
+                                <p class="mt-1 text-sm text-on-surface-variant">${factor.description}</p>
+                            </div>
+                            <span class="rounded-full px-3 py-1 text-xs font-bold ${impactBadgeClass(factor.impact)}">${sign}${factor.impact}%</span>
+                        </div>
+                    </div>
+                `
+            }).join("")
+
+            document.getElementById("prediction-actions").innerHTML = result.recommendations.map((action) => `
+                <div class="rounded-2xl bg-surface-container-low px-4 py-4">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary-container/40 text-secondary">
+                            <span class="material-symbols-outlined">${action.icon}</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-primary">${action.title}</p>
+                            <p class="mt-1 text-sm text-on-surface-variant">${action.description}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join("")
+
+            emptyEl.classList.add("hidden")
+            resultsEl.classList.remove("hidden")
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault()
+            clearFieldErrors()
+            setStatus("Running prediction...", "info")
+            submitButton.disabled = true
+            submitButton.classList.add("opacity-60", "cursor-not-allowed")
+
+            try {
+                const response = await fetch(form.dataset.apiUrl, {
+                    method: "POST",
+                    body: new FormData(form),
+                })
+                const payload = await response.json()
+
+                if (!response.ok || !payload.ok) {
+                    Object.entries(payload.errors || {}).forEach(([fieldName, errors]) => {
+                        if (fieldName === "__all__") {
+                            setStatus(errors.join(" "), "error")
+                        } else {
+                            setFieldError(fieldName, errors)
+                        }
+                    })
+                    if (!payload.errors || !Object.keys(payload.errors).length) {
+                        setStatus("Prediction request failed.", "error")
+                    }
+                    return
+                }
+
+                renderPrediction(payload.result)
+                setStatus("Prediction generated successfully.", "success")
+            } catch (error) {
+                setStatus("Prediction request failed. Refresh the page and try again.", "error")
+            } finally {
+                submitButton.disabled = false
+                submitButton.classList.remove("opacity-60", "cursor-not-allowed")
+            }
+        })
+    })()
+</script>
+{% endblock %}
